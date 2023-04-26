@@ -45,6 +45,30 @@ func (s *DNSProvider) SetRecordA(domainName string, ttl uint32, addr net.IP) err
 
 }
 
+func (s *DNSProvider) SetRecordCName(domainName string, canonical string, ttl uint32) error {
+
+	log.WithFields(logrus.Fields{"domainName": domainName, "canonical": canonical, "ttl": ttl}).Debug("Setting bogus CName record.")
+
+	return nil
+
+}
+
+func (s *DNSProvider) SetRecordPTR(domainName string, ttl uint32, addr net.IP) error {
+
+	log.WithFields(logrus.Fields{"domainName": domainName, "ttl": ttl, "addr": addr}).Debug("Setting bogus PTR record.")
+
+	return nil
+
+}
+
+func (s *DNSProvider) SetZoneAuth(domainName string) error {
+
+	log.WithFields(logrus.Fields{"domainName": domainName}).Debug("Setting bogus ZoneAuth record.")
+
+	return nil
+
+}
+
 func (s *DNSProvider) DeleteRecordAcmeChallenge(domainName string) error {
 
 	log.WithFields(logrus.Fields{"domainName": domainName}).Debug("Deleting bogus ACME challenge record.")
@@ -56,6 +80,22 @@ func (s *DNSProvider) DeleteRecordAcmeChallenge(domainName string) error {
 func (s *DNSProvider) DeleteRecordA(domainName string) error {
 
 	log.WithFields(logrus.Fields{"domainName": domainName}).Debug("Deleting bogus A record.")
+
+	return nil
+
+}
+
+func (s *DNSProvider) DeleteRecordCName(domainName string) error {
+
+	log.WithFields(logrus.Fields{"domainName": domainName}).Debug("Deleting bogus CName record.")
+
+	return nil
+
+}
+
+func (s *DNSProvider) DeleteRecordPTR(domainName string) error {
+
+	log.WithFields(logrus.Fields{"domainName": domainName}).Debug("Deleting bogus PTR record.")
 
 	return nil
 

@@ -24,6 +24,8 @@ Allgemeine Optionen
                                           Viele spezielle Parameter haben in einem spezifischen Projektumfeld fast immer 
                                           den selben Wert und sind dort abgelegt.
                                           D.h. innerhalb eines Projektumfeld wird eine von Spezialisten erstellte Konfigurationsdatei 
+                                          die angegeben Datei wird im aktuellen und Home-Verzeichnis gesucht, 
+                                          bzw. des absolute Pfad ab root verwendet
                                           verwendet und bei jedem Kommando mit übergeben.
   -v, --debug                             Mehr Information zum Ablauf des Kommandos um Fehler zu finden
   -f, --force                             Ermöglicht bei vielen Kommandos das überschreiben von Daten 
@@ -89,10 +91,7 @@ Allgemeine Optionen
         --terminal      Das Passwort wird von dns3lcli während der Ausführung abgefragt
                                 Überschreibt alle anderen Möglichkeiten für die Password Eingabe
 
-        --stdout        Das Token nicht im "Schlüsselbund/Passworttresor" speicher sondern auf der Konsol ausgeben 
-                        Dies erfolgt als Klartext, kann mit --json auf JSON-Formatt umgestellt werden  
-
-        --json          Das Token im JSON-Formatt ausgeben
+         --json          Das Token im JSON-Formatt ausgeben
 
     ------------------------------------------------------------------------------------------------------------
 
@@ -159,22 +158,26 @@ Allgemeine Optionen
         Mit --force kann ein überschreiben erzwungen werden
         Zur Zeit werden folgende Typen unterstützt
             -- A-Record
+            -- CNAME
+            -- PTR
         geplant sind 
             -- TXT
-            -- CNAME
-
+            -- ZONE auth
+            
         typischer Aufruf
             # Angabe der Konfigurationsdatei 
             # Benutzer aus der Konfigurations Datei unter dns.providers.infblxA.auth.user verwenden 
             # Passwort wird zur Laufzeit von dns3lcli abgefragt und sicher gespeichert 
             # und kann von dort für darauffolgende Aufrufe verwendet werden
-            ./dns3lcli --config=dns3cli_config_example.yaml --backend=infblxA --id=BetaTester --PWSafe  dns add test.sub.ibtest.foo.com  A 10.10.1.111 666
-
-        Argumente
-      	FQDN    Voll qualifizierter Domain Name 
-  		TYPE    Resource record type, die folgende Werte sind erlaubt  A|TXT|CNAME 
+            ./dns3lcli --config=dns3cli_config_example.yaml --backend=infblxA --id=BetaTester --PWSafe  dns add A test.sub.ibtest.foo.com  10.10.1.111 666
+        TYPE    Resource record type, die folgende Werte sind erlaubt  A|TXT|CNAME 
                 Der Wert bestimmt welche Werte unter DATA akzeptiert werden
-  		DATA    IP-Address, String oder Canonical-Name entsprechend zum Wert von TYPE 
+      	FQDN    A-Record    Voll qualifizierter Domain Name
+                CNAME       Voll qualifizierter Domain Name des Alias-Namen (Pseudonym, Stellvertreter)
+                PTR
+  		DATA    A-Record    IP-Address
+                CNAME       wirklicher Name des Ziels
+                PTR
         SEC     Gültigkeit / Lebensdauer des Eintrags in Sekunden
 
         Parameterbeschreibung
@@ -201,13 +204,7 @@ Allgemeine Optionen
                                     Konfigurationsdatei  
                                         Eintrag für infoblox unter  dns.providers.xxxxx.auth.pass 
                                         Eintrag für otc unter       dns.providers.xxxxx.auth.sk  
-        
-        --PWSafe                Überschreibt alle anderen Möglichkeiten für die Password Eingabe
-                                Das Passwort wird von dns3lcli während der Ausführung aus dem "Schlüsselbund" bzw. "Passworttresor" entnommen 
-                                Unter Liunx der sogenannte KeyRing verwendet. Das Password muss zuvor mit z.B.
-                                ./dns3lcli --config=dns3cli_config_example.yaml --terminal --backend="XXXXXX"  login dns
-                                in den Schlüsselbund eingefügt worden sein
-                                Wird die Login-Session auf den jeweiligem System beendet, wird der Keyring gelöscht und mit ihm alle Daten
+       
      ------------------------------------------------------------------------------------------------------------
     
     ./dns3lcli dns del
@@ -227,9 +224,9 @@ Allgemeine Optionen
              ./dns3lcli --config=dns3cli_config_example.yaml --backend=infblxA --id=BetaTester --PWSafe dns del  test.sub.ibtest.foo.com  A 
 
         Argumente
-      	FQDN    Voll qualifizierter Domain Name 
-  		TYPE    Resource record type, die folgende Werte sind erlaubt  A|TXT|CNAME 
+        TYPE    Resource record type, die folgende Werte sind erlaubt  A|TXT|CNAME 
                 Der Wert bestimmt welche Eintrag unter den FQDN gelöscht wird
+      	FQDN    Voll qualifizierter Domain Name 
   	
         Parameterbeschreibung
         
@@ -254,13 +251,7 @@ Allgemeine Optionen
                                         Eintrag für infoblox unter  dns.providers.xxxxx.auth.pass 
                                         Eintrag für otc unter       dns.providers.xxxxx.auth.sk  
         
-        --PWSafe                Überschreibt alle anderen Möglichkeiten für die Password Eingabe
-                                Das Passwort wird von dns3lcli während der Ausführung aus dem "Schlüsselbund" bzw. "Passworttresor" entnommen 
-                                Unter Liunx wird der sogenannte KeyRing verwendet. Das Password muss zuvor mit z.B.
-                                ./dns3lcli --config=dns3cli_config_example.yaml --terminal --backend="XXXXXX"  login dns
-                                in den Schlüsselbund eingefügt worden sein
-                                Wird die Login-Session auf den jeweiligem System beendet, wird der Keyring gelöscht und mit ihm alle Daten
-
+        
 ================================================================================================================
 --Kommando cert
 

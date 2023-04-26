@@ -99,9 +99,6 @@ var DNSProviderID string
 // -s   --secret  secret e.g. password for login [$DNS3L_DNS_SECRET]
 var DNSProviderSecret string
 
-// Use the Secret from the PasswordSafe LINUX Keyring Windows not implemented
-var DNSUsePWSafe bool
-
 // ----------------------
 // args args args
 // --------------_-------
@@ -124,7 +121,7 @@ func DNSAddCmdCb(ccmd *cobra.Command, args []string) error {
 	}
 	var dnsAdd clitypes.DNSAddType
 	var err error
-	err = dnsAdd.Init(Verbose, JSONOutput, Backend, Force, DNSProviderID, DNSProviderSecret, DNSUsePWSafe, args)
+	err = dnsAdd.Init(Verbose, JSONOutput, Backend, Force, DNSProviderID, DNSProviderSecret, args)
 	if err != nil {
 		return err
 	}
@@ -139,7 +136,7 @@ func DNSAddCmdCb(ccmd *cobra.Command, args []string) error {
 		ipAddr := net.ParseIP(dnsAdd.Data)
 		if Force {
 			var dnsDel clitypes.DNSDelType
-			errInit := dnsDel.Init(Verbose, JSONOutput, Backend, DNSProviderID, DNSProviderSecret, DNSUsePWSafe, args)
+			errInit := dnsDel.Init(Verbose, JSONOutput, Backend, DNSProviderID, DNSProviderSecret, args)
 			if errInit != nil {
 				return clitypes.NewValueError(1002, fmt.Errorf("dns Add init data struct failed: %s", err.Error()))
 			}
@@ -156,7 +153,54 @@ func DNSAddCmdCb(ccmd *cobra.Command, args []string) error {
 		if err != nil {
 			return clitypes.NewValueError(1005, err)
 		}
-		fmt.Fprintf(os.Stdout, "OK\n Add DNS record := '%v'", dnsAdd.FQDN)
+		fmt.Fprintf(os.Stdout, "OK\n Add DNS record := '%v'\n", dnsAdd.FQDN)
+	}
+	if dnsAdd.Type == string("cname") {
+		if Force {
+			var dnsDel clitypes.DNSDelType
+			errInit := dnsDel.Init(Verbose, JSONOutput, Backend, DNSProviderID, DNSProviderSecret, args)
+			if errInit != nil {
+				return clitypes.NewValueError(10010, fmt.Errorf("dns Add init data struct failed: %s", err.Error()))
+			}
+			err := dnsDel.P.DeleteRecordCName(dnsDel.FQDN)
+			if err != nil {
+				// delete fails but the flag force is set and it is not an error
+				fmt.Fprintf(os.Stderr, "Info: DNS ADD Delete of the CName fails '%v' continue with add\n", err.Error())
+				fmt.Fprintf(os.Stderr, "Info: DNS ADD This occures due to Flag force, which try to delete the record")
+			} else {
+				fmt.Fprintf(os.Stderr, "INFO: DNS ADD DNS CName deleted successfully due to Flag force\n")
+			}
+		}
+		//								 name       canonical kanonische Name (oder wahre Name)
+		//								alias		target, which A-Record is returned
+		err := dnsAdd.P.SetRecordCName(dnsAdd.FQDN, dnsAdd.Data, uint32(dnsAdd.Seconds))
+		if err != nil {
+			return clitypes.NewValueError(1025, err)
+		}
+		fmt.Fprintf(os.Stdout, "OK\n Add DNS CNAME record := '%v'\n", dnsAdd.FQDN)
+	}
+	if dnsAdd.Type == string("ptr") {
+		ipAddr := net.ParseIP(dnsAdd.Data)
+		if false {
+			var dnsDel clitypes.DNSDelType
+			errInit := dnsDel.Init(Verbose, JSONOutput, Backend, DNSProviderID, DNSProviderSecret, args)
+			if errInit != nil {
+				return clitypes.NewValueError(1032, fmt.Errorf("dns Add init data struct failed: %s", err.Error()))
+			}
+			err := dnsDel.P.DeleteRecordCName(dnsDel.FQDN)
+			if err != nil {
+				// delete fails but the flag force is set and it is not an error
+				fmt.Fprintf(os.Stderr, "Info: DNS ADD Delete of the A Record fails '%v' continue with add\n", err.Error())
+				fmt.Fprintf(os.Stderr, "Info: DNS ADD This occures due to Flag force, which try to delete the record")
+			} else {
+				fmt.Fprintf(os.Stderr, "INFO: DNS ADD DNS record A deleted successfully due to Flag force\n")
+			}
+		}
+		err := dnsAdd.P.SetRecordPTR(dnsAdd.FQDN, uint32(dnsAdd.Seconds), ipAddr)
+		if err != nil {
+			return clitypes.NewValueError(1035, err)
+		}
+		fmt.Fprintf(os.Stdout, "OK\n Add DNS record := '%v'\n", dnsAdd.FQDN)
 	}
 	return nil
 }
@@ -173,12 +217,12 @@ var DNSAddCommand = &cobra.Command{
 // implementation of [dns del]
 // Args: FQDN TYPE DATA
 func DNSDelCmdCb(ccmd *cobra.Command, args []string) error {
-	if len(args) != 3 {
-		return clitypes.NewValueError(2001, fmt.Errorf("DNS DEL requires 3 Arguments but found %d \n", len(args)))
+	if (len(args) < 1) || (len(args) > 2) {
+		return clitypes.NewValueError(2001, fmt.Errorf("DNS DEL requires 2 or 3 Arguments related to Type of Record but found %d \n", len(args)))
 	}
 	var dnsDel clitypes.DNSDelType
 	var err error
-	err = dnsDel.Init(Verbose, JSONOutput, Backend, DNSProviderID, DNSProviderSecret, DNSUsePWSafe, args)
+	err = dnsDel.Init(Verbose, JSONOutput, Backend, DNSProviderID, DNSProviderSecret, args)
 	if err != nil {
 		return err
 	}
@@ -192,12 +236,31 @@ func DNSDelCmdCb(ccmd *cobra.Command, args []string) error {
 	if dnsDel.Type == string("a") {
 		err := dnsDel.P.DeleteRecordA(dnsDel.FQDN)
 		if err != nil {
-			return clitypes.NewValueError(2002, fmt.Errorf("DNS DEL record failed: '%s' not deleted '%v'\n", dnsDel.FQDN, err.Error()))
+			return clitypes.NewValueError(2002, fmt.Errorf("DNS DEL A record failed: '%s' not deleted '%v'\n", dnsDel.FQDN, err.Error()))
 		}
 		if Verbose {
 			fmt.Fprintf(os.Stderr, "SUCCESS: DNS record deletet %s \n", dnsDel.FQDN)
 		}
 	}
+	if dnsDel.Type == string("cname") {
+		err := dnsDel.P.DeleteRecordCName(dnsDel.FQDN)
+		if err != nil {
+			return clitypes.NewValueError(2002, fmt.Errorf("DNS DEL CNAME failed: '%s' not deleted '%v'\n", dnsDel.FQDN, err.Error()))
+		}
+		if Verbose {
+			fmt.Fprintf(os.Stderr, "SUCCESS: DNS record deletet %s \n", dnsDel.FQDN)
+		}
+	}
+	if dnsDel.Type == string("ptr") {
+		err := dnsDel.P.DeleteRecordA(dnsDel.FQDN)
+		if err != nil {
+			return clitypes.NewValueError(2002, fmt.Errorf("DNS DEL A record failed: '%s' not deleted '%v'\n", dnsDel.FQDN, err.Error()))
+		}
+		if Verbose {
+			fmt.Fprintf(os.Stderr, "SUCCESS: DNS record deletet %s \n", dnsDel.FQDN)
+		}
+	}
+
 	return nil
 }
 
@@ -242,7 +305,7 @@ func DNSQueryCmdCb(ccmd *cobra.Command, args []string) error {
 		return clitypes.NewValueError(4001, fmt.Errorf("DNS QUERY requires 1 Arguments but found %d \n", len(args)))
 	}
 	var dnsQuery = clitypes.DNSQueryType{Verbose: Verbose, JSONOutput: JSONOutput,
-		Backend: Backend, User: DNSProviderID, Pass: DNSProviderSecret, UsePWSafe: DNSUsePWSafe, FQDN: args[0]}
+		Backend: Backend, User: DNSProviderID, Pass: DNSProviderSecret, FQDN: args[0]}
 	dnsQuery.PrintParams()
 	err := dnsQuery.CheckParams()
 	if err != nil {
@@ -288,7 +351,6 @@ func initDNS() {
 	DNSCommand.PersistentFlags().StringVarP(&DNSProviderID, "id", "i", vip.GetString("dns.id"), " Id / User of the DNS backend [$DNS3L_DNS_ID]")
 	DNSCommand.PersistentFlags().StringVarP(&DNSProviderSecret, "secret", "s", vip.GetString("dns.secret"), "Secret e.g. password of the DNS backend [$DNS3L_DNS_SECRET]")
 
-	DNSCommand.PersistentFlags().BoolVarP(&DNSUsePWSafe, "PWSafe", "", false, "Use the Password or Secret of the PasswordSafe in case of Linux(Keyring) Windows(not implemented)")
 	// we want no NoOptdefault !
 	// DNSCommand.PersistentFlags().Lookup("PWSafe").NoOptDefVal = "true"
 

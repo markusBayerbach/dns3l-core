@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/dns3l/dns3l-core/cli/clitypes"
-	"github.com/dns3l/dns3l-core/cli/cliutil"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -336,12 +335,7 @@ func initCert() {
 	// use the value out of the ring as default value in the command line
 	var aToken string
 	// we test if something is stored in the keyring
-	rTok, inErr := cliutil.GetPasswordfromRing("CertIdToken", false)
-	if inErr == nil {
-		aToken = string(rTok)
-	} else {
-		aToken = ""
-	}
+	aToken = ""
 	envToken := vip.GetString("cert.token")
 	if envToken != "" {
 		aToken = envToken

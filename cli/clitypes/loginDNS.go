@@ -3,28 +3,23 @@ package clitypes
 import (
 	"fmt"
 	"os"
-	"time"
-
-	"github.com/dns3l/dns3l-core/cli/cliutil"
 )
 
 type LoginDNSType struct {
 	Verbose      bool
 	DNSBackend   string
 	FromTerminal bool
-	ForceOStream bool
 	User         string
 	Password     string
 }
 
-func (loginData *LoginDNSType) Init(verbose bool, backend string, user string, pass string, forceOStream bool, fromTerminal bool) {
+func (loginData *LoginDNSType) Init(verbose bool, backend string, user string, pass string, fromTerminal bool) {
 	loginData.Verbose = verbose
 	loginData.DNSBackend = backend
 	// providerID = User Name
 	loginData.User = user
 	loginData.Password = pass
 	loginData.FromTerminal = fromTerminal
-	loginData.ForceOStream = forceOStream
 }
 
 func (loginData *LoginDNSType) PrintParams() {
@@ -58,7 +53,6 @@ func (loginData *LoginDNSType) DoCommand() error {
 	var user string
 	var bIn []byte
 	var inErr error
-	var data []byte
 	switch {
 	case loginData.User == "NOT_SET":
 		user, _ = getProviderData(loginData.DNSBackend, false)
@@ -69,7 +63,7 @@ func (loginData *LoginDNSType) DoCommand() error {
 		}
 	}
 	if loginData.FromTerminal {
-		bIn, inErr = cliutil.GetPasswordFromConsole("DNS Provider Login Id '" + user + "' =")
+		bIn, inErr = GetPasswordFromConsole("DNS Provider Login Id '" + user + "' =")
 		if inErr == nil {
 			secret = string(bIn)
 		} else {
@@ -87,22 +81,12 @@ func (loginData *LoginDNSType) DoCommand() error {
 		}
 	}
 	if loginData.Verbose {
-		fmt.Fprintf(os.Stderr, "KeyRing name '%s'\n", user)
-	}
-	if nil != cliutil.CachePassword(user, secret, 3600*4, loginData.Verbose) {
-		return NewValueError(530, fmt.Errorf("can not store secrete in the password safe"))
-	}
-	time.Sleep(time.Millisecond * 10)
-	data, inErr = cliutil.GetPasswordfromRing(user, loginData.Verbose)
-	if inErr != nil {
-		return NewValueError(540, fmt.Errorf("write to password safe was not OK: Error %v", inErr.Error()))
-	}
-	if loginData.Verbose {
-		if len(data) > 3 {
-			fmt.Fprintf(os.Stderr, "Info: DNS backend login Secret sucessfully stored in password safe User '%s' pass '%s...' \n", user, string(data)[0:3])
+		if len(secret) > 3 {
+			fmt.Fprintf(os.Stderr, "Info: DNS backend login Secret for enviroment User '%s' pass '%s...' \n", user, string(secret)[0:3])
 		} else {
-			fmt.Fprintf(os.Stderr, "Info: DNS backend login Secret sucessfully stored in password safe User '%s' \n", user)
+			fmt.Fprintf(os.Stderr, "Info: DNS backend login Secret for enviroment User '%s' \n", user)
 		}
 	}
+	fmt.Fprintf(os.Stdout, "DNS3L_DNS_SECRET='%v'\n", secret)
 	return nil
 }

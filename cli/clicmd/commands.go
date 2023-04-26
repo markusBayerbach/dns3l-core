@@ -104,12 +104,6 @@ func Execute() error {
 // this function is called from golang before main
 // for c++ people something like a constructor of this file
 func init() {
-	// we must parse the command line by manually
-	// to get viper working and put its values as default into cobra
-	value, OK := parseCommandLineForConfig()
-	if OK {
-		Config = value
-	}
 	// first init Viper,
 	//that we have the values from config-file or shell Variable
 	initViperConfig()
@@ -138,15 +132,6 @@ func init() {
 
 func initViperConfig() {
 	vip := viper.GetViper()
-	vip.AddConfigPath(".") // optionally look for config in the working directory
-	if checkEnv(viperShellPrefix + "_CONFIG") {
-		vip.AddConfigPath("$" + viperShellPrefix + "_CONFIG") // == "$DNS3L_CONFIG"
-	}
-	// Find home directory.
-	home, errOS := os.UserHomeDir()
-	cobra.CheckErr(errOS)
-	vip.AddConfigPath(home)   // path to look for the config file in
-	vip.SetConfigType("yaml") // REQUIRED if the config file does not have the extension in the name
 	vip.AutomaticEnv()
 	// has to be called behind AutomaticEnv()
 	// it is not necessary to set this
@@ -184,19 +169,32 @@ func initViperConfig() {
 	vip.BindEnv("cert.modeFull", viperShellPrefix+"_CERT_MODE")     //nolint:errcheck
 	vip.BindEnv("cert.api", viperShellPrefix+"_CERT_API")           //nolint:errcheck
 	vip.BindEnv("cert.token", viperShellPrefix+"_CERT_TOKEN")       //nolint:errcheck
-
-	// if in the commandline was no --config
-	if Config == "" {
-		Config = vip.GetString("config")
+	vip.SetConfigType("yaml")                                       // REQUIRED if the config file does not have the extension in the name
+	// we must parse the command line by manually
+	// to get viper working and put its values as default into cobra
+	// if checkEnv(viperShellPrefix + "_CONFIG") {
+	// 	tmp := os.Getenv(viperShellPrefix + "_CONFIG")
+	// 	if tmp != "" {
+	//		Config = tmp
+	//	}
+	// }
+	value, OK := parseCommandLineForConfig()
+	if OK {
+		Config = value
+		// fmt.Fprintf(os.Stderr, "INFO: parseCommandLineForConfig() -> config file: '%s'\n", Config)
 	}
-	if Verbose {
-		fmt.Fprintf(os.Stderr, "INFO: Using config file: '%s' \n", Config)
-	}
+	home, errOS := os.UserHomeDir()
+	cobra.CheckErr(errOS)
+	vip.AddConfigPath(".")  // optionally look for config in the working directory
+	vip.AddConfigPath(home) // path to look for the config file in
+	vip.AddConfigPath("/")
+	vip.SetConfigName(Config)
 	if !(parseCommandLineForHelp() || parseCommandLineForVersionCommand()) {
-		vip.SetConfigName(Config) // name of config file (without extension)
+		// SetConfigFile explicitly defines the path, name and extension of the config file.
+		// Viper will use this and not check any of the config paths.
 		err := vip.ReadInConfig() // Find and read the config file
 		if err != nil {           // Handle errors reading the config file
-			fmt.Fprintf(os.Stderr, "ERROR: Init fatal error config file:%v \n Using config file: %s\n", err, vip.ConfigFileUsed())
+			fmt.Fprintf(os.Stderr, "ERROR: Init fatal error : %v \n", err)
 			os.Exit(2)
 		} else if Verbose {
 			fmt.Fprintf(os.Stderr, "SUCCESS: Init Configuration sucessfully read: %s\n", vip.ConfigFileUsed())
@@ -210,12 +208,13 @@ func initViperConfig() {
 // during the initialisation
 // we have a chicken egg problem about
 func parseCommandLineForConfig() (string, bool) {
-	regExWithValue := regexp.MustCompile(`^((-c=\w+)|(--config=\w+))`)
+	regExWithValue := regexp.MustCompile(`^((-c=\S+)|(--config=\S+))`)
 	var cliVal string
 	var count int = 0
 	for _, v := range os.Args {
 		// fmt.Printf("Value := %s \n", v)
 		if strings.EqualFold(v, "-c") || strings.EqualFold(v, "--config") {
+			// fmt.Printf("Match for NoOptDefault")
 			cliVal = "dns3lcli.yaml"
 			count++
 		}
@@ -223,13 +222,14 @@ func parseCommandLineForConfig() (string, bool) {
 			// alles nach dem 1sten = übernehmen
 			cliVal = v[strings.Index(v, "=")+1:]
 			count++
+			// fmt.Printf("Match for  %s \n", cliVal)
 		}
 	}
 	if count == 1 {
 		return cliVal, true
 	}
 	if count > 1 {
-		fmt.Fprintf(os.Stderr, "ERROR: Init found  more than one config flag!\n")
+		// fmt.Fprintf(os.Stderr, "ERROR: Init found  more than one config flag!\n")
 		return string(""), false
 	}
 	return string(""), false

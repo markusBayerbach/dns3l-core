@@ -27,6 +27,8 @@ General options
                                             and are stored there. i. e. within a project 
                                             environment a configuration file created 
                                             by specialists used  passed with each command.
+                                            the given file is search from working, home directory
+                                            if it is a absolute path this is used
     -v, --debug                             More information about how to run the command 
                                             to find errors
     -f, --force                             Allows data overwriting for many commands

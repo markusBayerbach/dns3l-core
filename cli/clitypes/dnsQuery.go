@@ -5,21 +5,24 @@ import (
 	"os"
 )
 
-/*DNSQueryType ----------------------------------------------------------------------------------
-   	query    Query DNS backend
-   			Arguments:
-  				FQDN: Fully qualified domain name, potential zone nesting is reflected
-			Options:
-  				-p, --provider  | DNS backend [$DNS3L_DNS]
-  				-a, --api       | DNS backend API endpoint [$DNS3L_DNSAPI]
------------------------------------------------------------------------------------------ */
+/*
+DNSQueryType ----------------------------------------------------------------------------------
+
+	   	query    Query DNS backend
+	   			Arguments:
+	  				FQDN: Fully qualified domain name, potential zone nesting is reflected
+				Options:
+	  				-p, --provider  | DNS backend [$DNS3L_DNS]
+	  				-a, --api       | DNS backend API endpoint [$DNS3L_DNSAPI]
+
+-----------------------------------------------------------------------------------------
+*/
 type DNSQueryType struct {
 	Verbose    bool
 	JSONOutput bool
 	Backend    string
 	User       string
 	Pass       string
-	UsePWSafe  bool
 	FQDN       string
 }
 
@@ -31,7 +34,6 @@ func (DnsQuery *DNSQueryType) PrintParams() {
 		fmt.Fprintf(os.Stderr, "JsonOutput      '%t' \n", DnsQuery.JSONOutput)
 		fmt.Fprintf(os.Stderr, "Backend      	'%s' \n", DnsQuery.Backend)
 		fmt.Fprintf(os.Stderr, "dnsFQDN         '%s' Check:='%t'\n", DnsQuery.FQDN, CheckTypeOfFQDN(DnsQuery.FQDN))
-		fmt.Fprintf(os.Stderr, "use password safe     '%t' \n", DnsQuery.UsePWSafe)
 	}
 }
 

@@ -7,14 +7,28 @@ import (
 	"os"
 	"regexp"
 	"strings"
-
-	"github.com/dns3l/dns3l-core/cli/cliutil"
+	"syscall"
 
 	"github.com/dns3l/dns3l-core/dns/infblx"
 	"github.com/dns3l/dns3l-core/dns/otc"
 	"github.com/dns3l/dns3l-core/dns/types"
 	"github.com/spf13/viper"
+	"golang.org/x/term"
 )
+
+// GetPassword - Gets a secret from the User Session Keyring.
+// If the key doesn't exist, it asks the user to enter the password value.
+// It will cache the secret for a given number of seconds.
+func GetPasswordFromConsole(name string) ([]byte, error) {
+	fmt.Printf("Enter password for '%s': ", name)
+	password, err := term.ReadPassword(int(syscall.Stdin))
+	// 55 space to override
+	fmt.Printf("\r                                                             \r")
+	if err != nil {
+		return nil, fmt.Errorf("function getPasswordFromConsole(): failed to read password: %v", err)
+	}
+	return password, nil
+}
 
 // custom error handling
 type ExitValueError struct {
@@ -89,7 +103,7 @@ func getProviderData(dnsbackend string, verbose bool) (string, string) {
 	return user, secret
 }
 
-func setProvider(dnsbackend string, id string, secret string, usePWSafe bool, verbose bool) (types.DNSProvider, error) {
+func setProvider(dnsbackend string, id string, secret string, verbose bool) (types.DNSProvider, error) {
 	var dns types.DNSProvider
 	vip := viper.GetViper()
 	providerPath := "dns.providers." + dnsbackend + "."
@@ -129,34 +143,14 @@ func setProvider(dnsbackend string, id string, secret string, usePWSafe bool, ve
 				return nil, NewValueError(1102, fmt.Errorf("fuction SetProvider() failed: User/ID is empty"))
 			}
 		}
-		// resolve the secret
-		if usePWSafe {
-			var err error
-			var sec []byte
-			if verbose {
-				fmt.Fprintf(os.Stderr, "INFO setProvider(): User %s and password from safe \n", infblxConfig.Auth.User)
-			}
-			if sec, err = cliutil.GetPasswordfromRing(infblxConfig.Auth.User, verbose); err != nil {
-				infblxConfig.Auth.Pass = ""
-				return nil, NewValueError(1103, fmt.Errorf("fucntion SetProvider() failed: no secret found in the Keyring for '%v' and ID:= '%v'", dnsbackend, infblxConfig.Auth.User))
-			} else {
-				infblxConfig.Auth.Pass = string(sec)
-				if verbose {
-					fmt.Fprintf(os.Stderr, "INFO setProvider() Secret provided by Keyring for DNSBackend '%v' and ID:= '%v'\n", dnsbackend, infblxConfig.Auth.User)
-				}
-			}
+		// with "" or "NOT_SET" we switch to the values in the providersection"
+		if secret != "" && secret != "NOT_SET" {
+			infblxConfig.Auth.Pass = secret
 		} else {
-			// with "" or "NOT_SET" we switch to the values in the providersection"
-			if secret != "" && secret != "NOT_SET" {
-				if verbose {
-					fmt.Fprintf(os.Stderr, "INFO setProvider() secret != '' or 'NOT_SET'\n")
-				}
-				infblxConfig.Auth.Pass = secret
-			} else {
-				if verbose {
-					fmt.Fprintf(os.Stderr, "INFO setProvider()  using Provider section  \n")
-				}
-				infblxConfig.Auth.Pass = vip.GetString(providerPath + "auth.pass")
+			infblxConfig.Auth.Pass = vip.GetString(providerPath + "auth.pass")
+			if verbose {
+				fmt.Fprintf(os.Stderr, "INFO  setProvider() providers section '%s' selected \n", dnsbackend)
+				fmt.Fprintf(os.Stderr, "INFO  setProvider() secret:= '%2s' ", infblxConfig.Auth.Pass)
 			}
 		}
 		infblxConfig.DNSView = vip.GetString(providerPath + "dnsview")
@@ -225,14 +219,6 @@ func printCertClaimHints(hints hintsType) {
 func FinalCertToken(inToken string) string {
 	var aToken string
 	switch inToken {
-	case "USE_RING_TOKEN":
-		token, inErr := cliutil.GetPasswordfromRing("CertIdToken", false)
-		if inErr == nil {
-			aToken = string(token)
-		} else {
-			fmt.Fprintf(os.Stderr, "Token for AMCE API Endpoint not found in KeyRing as exspected \n")
-			aToken = ""
-		}
 	case "USE_ENV_TOKEN":
 		vip := viper.GetViper()
 		envToken := vip.GetString("cert.token")
@@ -279,12 +265,12 @@ func PrintViperConfigDNS() {
 	// Provider = viper.GetString("provider")
 	//BackendAPIEndPoint = viper.GetString("api")
 	vip := viper.GetViper()
-	fmt.Fprintf(os.Stderr, "value read from config Provider Name 	'%s' \n", vip.GetString("dns.backend"))
-	fmt.Fprintf(os.Stderr, "value read from config  dns force flag	'%s' \n", vip.GetString("force"))
-	fmt.Fprintf(os.Stderr, "value read from config  debug flag 	    '%s' \n", vip.GetString("debug"))
-	fmt.Fprintf(os.Stderr, "value read from config  json output 	    '%s' \n", vip.GetString("json"))
-	fmt.Fprintf(os.Stderr, "value read from config  User/ Id 	        '%s' \n", vip.GetString("dns.id"))
-	fmt.Fprintf(os.Stderr, "value read from config  secret / Password '%s' \n", vip.GetString("dns.secret"))
+	fmt.Fprintf(os.Stderr, "value read from config  Provider Name     '%s' \n", vip.GetString("dns.backend"))
+	fmt.Fprintf(os.Stderr, "value read from config  dns force flag    '%s' \n", vip.GetString("force"))
+	fmt.Fprintf(os.Stderr, "value read from config  debug flag        '%s' \n", vip.GetString("debug"))
+	fmt.Fprintf(os.Stderr, "value read from config  json output       '%s' \n", vip.GetString("json"))
+	fmt.Fprintf(os.Stderr, "value read from config  User/ Id          '%s' \n", vip.GetString("dns.id"))
+	fmt.Fprintf(os.Stderr, "value read from config  secret / Password '%.2s' \n", vip.GetString("dns.secret"))
 
 }
 
@@ -303,7 +289,7 @@ func PrintViperConfigCert() {
 	fmt.Fprintf(os.Stderr, "value read from config  json output 	'%s' \n", vip.GetString("json"))
 }
 
-var dnsTypeList [3]string = [...]string{"a", "txt", "cname"}
+var dnsTypeList [4]string = [...]string{"a", "txt", "cname", "ptr"}
 
 // CheckTypeOfDNSRecord checks the type of a DNS record
 func CheckTypeOfDNSRecord(valStr string) bool {
@@ -326,6 +312,9 @@ func CheckTypeOfData(valStr string, typeString string) bool {
 		return regExTXT.MatchString(valStr)
 	case strings.EqualFold(typeString, dnsTypeList[2]): // "cname"
 		return regExCName.MatchString(valStr)
+	case strings.EqualFold(typeString, dnsTypeList[3]): // "ptr"
+		return regExFQDN.MatchString(valStr)
+
 	}
 	return false
 }

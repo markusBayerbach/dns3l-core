@@ -17,7 +17,6 @@ var LoginDNSBackend string
 var LoginACMEID string
 var LoginACMESecret string
 
-var LoginForceOStream bool
 var GetPasswordFromTerminal bool
 
 // DNSQueryCmdCb ------------------------------------
@@ -28,7 +27,7 @@ func LoginDNSCb(ccmd *cobra.Command, args []string) error {
 		return clitypes.NewValueError(501, fmt.Errorf("Login DNS backend requires 0 Arguments but found %d \n", len(args)))
 	}
 	var loginDNS clitypes.LoginDNSType
-	loginDNS.Init(Verbose, LoginDNSBackend, LoginDNSID, LoginDNSSecret, LoginForceOStream, GetPasswordFromTerminal)
+	loginDNS.Init(Verbose, LoginDNSBackend, LoginDNSID, LoginDNSSecret, GetPasswordFromTerminal)
 	loginDNS.PrintParams()
 	err := loginDNS.CheckParams()
 	if err != nil {
@@ -52,7 +51,7 @@ func LoginACMECb(ccmd *cobra.Command, args []string) error {
 		return clitypes.NewValueError(601, fmt.Errorf("login ACME: requires 0 Arguments but found %d \n %v \n", len(args), args))
 	}
 	var loginACME clitypes.LoginACMEType
-	loginACME.Init(Verbose, LoginACMEID, LoginACMESecret, LoginForceOStream, GetPasswordFromTerminal)
+	loginACME.Init(Verbose, LoginACMEID, LoginACMESecret, GetPasswordFromTerminal)
 	loginACME.PrintParams()
 	err := loginACME.CheckParams()
 	if err != nil {
@@ -90,8 +89,6 @@ func initLogin() {
 	LoginCommand.AddCommand(LoginACME)
 	LoginCommand.AddCommand(LoginDNS)
 
-	LoginCommand.PersistentFlags().BoolVarP(&LoginForceOStream, "stdout", "", false, "Force the output of the token to stdout")
-	LoginCommand.PersistentFlags().Lookup("stdout").NoOptDefVal = "true"
 	LoginCommand.PersistentFlags().BoolVarP(&GetPasswordFromTerminal, "terminal", "", false, "Force the input of the password/token from stdin")
 	LoginCommand.PersistentFlags().Lookup("terminal").NoOptDefVal = "true"
 	// ACME

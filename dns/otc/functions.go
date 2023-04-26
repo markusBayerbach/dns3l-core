@@ -121,6 +121,24 @@ func (s *DNSProvider) SetRecordA(domainName string, ttl uint32, addr net.IP) err
 
 }
 
+func (p *DNSProvider) SetRecordCName(domainName string, canonical string, ttl uint32) error {
+
+	return fmt.Errorf("function SetRecordCName not implemented for OTC ")
+
+}
+
+func (p *DNSProvider) SetRecordPTR(domainName string, ttl uint32, addr net.IP) error {
+
+	return fmt.Errorf("function SetRecordPTR not implemented for OTC ")
+
+}
+
+func (p *DNSProvider) SetZoneAuth(domainName string) error {
+
+	return fmt.Errorf("function SetRecordZoneauth not implemented for OTC ")
+
+}
+
 // DeleteTXTRecord removes a previously set DNS01 challenge TXT
 // record in the OTC's DNS service. Automatically determines the zone
 // which needs to be changed.
@@ -199,6 +217,18 @@ func (s *DNSProvider) DeleteRecordA(domainName string) error {
 	}
 
 	return nil
+
+}
+
+func (p *DNSProvider) DeleteRecordCName(domainName string) error {
+
+	return fmt.Errorf("function Delete Record CNAME not implemented for OTC ")
+
+}
+
+func (p *DNSProvider) DeleteRecordPTR(domainName string) error {
+
+	return fmt.Errorf("function Delete Reocrd PTR not implemented for OTC ")
 
 }
 

@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dns3l/dns3l-core/cli/cliutil"
 	"github.com/spf13/viper"
 )
 
@@ -50,7 +49,6 @@ type LoginACMEType struct {
 	FromTerminal     bool
 	ACMEProviderID   string
 	ACMEProviderPASS string
-	ACMEForceOStream bool
 	ClientInfo       ClientAppData
 }
 
@@ -129,7 +127,7 @@ func (loginData *LoginACMEType) GetDEXToken(msg *OpenIdInfo) (*TokenInfo, error)
 	return &aToken, nil
 }
 
-func (loginData *LoginACMEType) Init(verbose bool, id string, pass string, forceOStream bool, fromTerminal bool) {
+func (loginData *LoginACMEType) Init(verbose bool, id string, pass string, fromTerminal bool) {
 	vip := viper.GetViper()
 	var clientInfoViper ClientAppData
 	clientInfoViper.OidcUrl = vip.GetString("acme.oidcUrl")
@@ -137,7 +135,6 @@ func (loginData *LoginACMEType) Init(verbose bool, id string, pass string, force
 	clientInfoViper.ClientSecret = vip.GetString("acme.clientSecret")
 	// this are the values out of VIPER  Config and ENVIROMENT of SHELL
 	loginData.Verbose = verbose
-	loginData.ACMEForceOStream = forceOStream
 	loginData.FromTerminal = fromTerminal
 	// this are the values from the COMMANDLINE / Enviroment / Config
 	loginData.ACMEProviderID = id
@@ -151,7 +148,6 @@ func (loginData *LoginACMEType) PrintParams() {
 	if loginData.Verbose {
 		fmt.Fprintf(os.Stderr, "INFO: Command Add Cert Token to linux keyring or file add called \n")
 		fmt.Fprintf(os.Stderr, "INFO: Verbose='%v'\n", loginData.Verbose)
-		fmt.Fprintf(os.Stderr, "INFO: ForceOStream='%v'\n", loginData.ACMEForceOStream)
 		fmt.Fprintf(os.Stderr, "INFO: ForceTerminalInput='%v'\n", loginData.FromTerminal)
 		fmt.Fprintf(os.Stderr, "INFO: ACMEProviderID '%v'\n", loginData.ACMEProviderID)
 		if loginData.ACMEProviderPASS == "" {
@@ -185,7 +181,7 @@ func (loginData *LoginACMEType) CheckParams() error {
 
 func (loginData *LoginACMEType) DoCommand() error {
 	if loginData.FromTerminal {
-		bIn, inErr := cliutil.GetPasswordFromConsole("Password for acme account " + loginData.ACMEProviderID + " =")
+		bIn, inErr := GetPasswordFromConsole("Password for acme account " + loginData.ACMEProviderID + " =")
 		if inErr == nil {
 			loginData.ACMEProviderPASS = string(bIn)
 		} else {
@@ -205,22 +201,6 @@ func (loginData *LoginACMEType) DoCommand() error {
 	if err != nil {
 		return NewValueError(640, err)
 	}
-	// put into the ring
-	if !loginData.ACMEForceOStream {
-		err := cliutil.CachePassword("CertAccountToken", tok.AccesssToken, uint(tok.Expire+60), loginData.Verbose)
-		if nil != err {
-			return NewValueError(650, err)
-		}
-		err = cliutil.CachePassword("CertIdToken", tok.IdToken, uint(tok.Expire+60), loginData.Verbose)
-		if nil != err {
-			return NewValueError(660, err)
-		}
-		err = cliutil.CachePassword("CertRefreshToken", tok.RefreshToken, uint(tok.Expire+60), loginData.Verbose)
-		if nil != err {
-			return NewValueError(670, err)
-		}
-	} else {
-		fmt.Fprintf(os.Stdout, "%v\n", tok.AccesssToken)
-	}
+	fmt.Fprintf(os.Stdout, "%v\n", tok.AccesssToken)
 	return nil
 }

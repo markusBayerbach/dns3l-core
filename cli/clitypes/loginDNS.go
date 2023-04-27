@@ -81,11 +81,7 @@ func (loginData *LoginDNSType) DoCommand() error {
 		}
 	}
 	if loginData.Verbose {
-		if len(secret) > 3 {
-			fmt.Fprintf(os.Stderr, "Info: DNS backend login Secret for enviroment User '%s' pass '%s...' \n", user, string(secret)[0:3])
-		} else {
-			fmt.Fprintf(os.Stderr, "Info: DNS backend login Secret for enviroment User '%s' \n", user)
-		}
+		fmt.Fprintf(os.Stderr, "Info: DNS backend login Secret for enviroment User '%s' pass '%.2s...' \n", user, string(secret))
 	}
 	fmt.Fprintf(os.Stdout, "DNS3L_DNS_SECRET='%v'\n", secret)
 	return nil

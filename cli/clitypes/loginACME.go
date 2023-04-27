@@ -153,9 +153,7 @@ func (loginData *LoginACMEType) PrintParams() {
 		if loginData.ACMEProviderPASS == "" {
 			fmt.Fprintf(os.Stderr, "INFO: ACMEProviderSecret 'is empty \n")
 		} else {
-			if len(loginData.ACMEProviderPASS) > 2 {
-				fmt.Fprintf(os.Stderr, "INFO: ACMEProviderSecret '%v'\n", loginData.ACMEProviderPASS[0:2])
-			}
+				fmt.Fprintf(os.Stderr, "INFO: ACMEProviderSecret '%.2s'\n", loginData.ACMEProviderPASS)
 		}
 		fmt.Fprintf(os.Stderr, "INFO: DATA READ FROM KONFIG FILE / ENVIROMENT \n")
 		fmt.Fprintf(os.Stderr, "INFO: acme.OicdUrl='%v'\n", loginData.ClientInfo.OidcUrl)

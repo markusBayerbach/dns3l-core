@@ -187,16 +187,23 @@ func DNSAddCmdCb(ccmd *cobra.Command, args []string) error {
 			if errInit != nil {
 				return clitypes.NewValueError(1032, fmt.Errorf("dns Add init data struct failed: %s", err.Error()))
 			}
-			err := dnsDel.P.DeleteRecordCName(dnsDel.FQDN)
+			err := dnsDel.P.DeleteRecordPTR(dnsDel.FQDN)
 			if err != nil {
 				// delete fails but the flag force is set and it is not an error
-				fmt.Fprintf(os.Stderr, "Info: DNS ADD Delete of the A Record fails '%v' continue with add\n", err.Error())
+				fmt.Fprintf(os.Stderr, "Info: DNS ADD Delete of the PTR Record fails '%v' continue with add\n", err.Error())
 				fmt.Fprintf(os.Stderr, "Info: DNS ADD This occures due to Flag force, which try to delete the record")
 			} else {
-				fmt.Fprintf(os.Stderr, "INFO: DNS ADD DNS record A deleted successfully due to Flag force\n")
+				fmt.Fprintf(os.Stderr, "INFO: DNS ADD DNS record PTR deleted successfully due to Flag force\n")
 			}
 		}
 		err := dnsAdd.P.SetRecordPTR(dnsAdd.FQDN, uint32(dnsAdd.Seconds), ipAddr)
+		if err != nil {
+			return clitypes.NewValueError(1035, err)
+		}
+		fmt.Fprintf(os.Stdout, "OK\n Add DNS record := '%v'\n", dnsAdd.FQDN)
+	}
+	if dnsAdd.Type == string("zone") {
+		err := dnsAdd.P.SetZoneAuth(dnsAdd.FQDN )
 		if err != nil {
 			return clitypes.NewValueError(1035, err)
 		}
@@ -252,12 +259,21 @@ func DNSDelCmdCb(ccmd *cobra.Command, args []string) error {
 		}
 	}
 	if dnsDel.Type == string("ptr") {
-		err := dnsDel.P.DeleteRecordA(dnsDel.FQDN)
+		err := dnsDel.P.DeleteRecordPTR(dnsDel.FQDN)
 		if err != nil {
-			return clitypes.NewValueError(2002, fmt.Errorf("DNS DEL A record failed: '%s' not deleted '%v'\n", dnsDel.FQDN, err.Error()))
+			return clitypes.NewValueError(2002, fmt.Errorf("DNS DEL PTR record failed: '%s' not deleted '%v'\n", dnsDel.FQDN, err.Error()))
 		}
 		if Verbose {
-			fmt.Fprintf(os.Stderr, "SUCCESS: DNS record deletet %s \n", dnsDel.FQDN)
+			fmt.Fprintf(os.Stderr, "SUCCESS: DNS PTR record deletet %s \n", dnsDel.FQDN)
+		}
+	}
+	if dnsDel.Type == string("zone") {
+		err := dnsDel.P.DeleteZoneAuth(dnsDel.FQDN)
+		if err != nil {
+			return clitypes.NewValueError(2002, fmt.Errorf("DNS DEL zone record failed: '%s' not deleted '%v'\n", dnsDel.FQDN, err.Error()))
+		}
+		if Verbose {
+			fmt.Fprintf(os.Stderr, "SUCCESS: DNS zone deletet %s \n", dnsDel.FQDN)
 		}
 	}
 

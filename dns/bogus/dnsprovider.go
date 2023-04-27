@@ -100,3 +100,11 @@ func (s *DNSProvider) DeleteRecordPTR(domainName string) error {
 	return nil
 
 }
+
+func (p *DNSProvider) DeleteZoneAuth(domainName string) error {
+
+	log.WithFields(logrus.Fields{"domainName": domainName}).Debug("Deleting bogus PTR record.")
+
+	return nil
+
+}

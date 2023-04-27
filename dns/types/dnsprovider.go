@@ -28,6 +28,7 @@ type DNSProvider interface {
 	DeleteRecordAcmeChallenge(domainName string) error
 	DeleteRecordA(domainName string) error
 
-	DeleteRecordCName(domainName string ) error
+	DeleteRecordCName(domainName string) error
 	DeleteRecordPTR(domainName string) error
+	DeleteZoneAuth(domainName string) error
 }

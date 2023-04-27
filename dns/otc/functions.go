@@ -229,6 +229,11 @@ func (p *DNSProvider) DeleteRecordCName(domainName string) error {
 func (p *DNSProvider) DeleteRecordPTR(domainName string) error {
 
 	return fmt.Errorf("function Delete Reocrd PTR not implemented for OTC ")
+}
+
+func (p *DNSProvider) DeleteZoneAuth(domainName string) error {
+
+	return fmt.Errorf("function Delete Zone Auth not implemented for OTC ")
 
 }
 

@@ -114,19 +114,18 @@ func (p *DNSProvider) SetRecordCName(domainName string, canonical string, ttl ui
 }
 
 /*
-{"name":"2.10.10.10.in-addr.arpa",
+"name":"2.10.10.10.in-addr.arpa",    <----- possible path to ??
 "ptrdname":"server1.info.com",
 "ipv4addr":"10.10.10.2"}
 */
+func (p *DNSProvider) SetRecordPTR(ptrDName string, ttl uint32, addr net.IP) error {
 
-func (p *DNSProvider) SetRecordPTR(domainName string, ttl uint32, addr net.IP) error {
-
-	err := common.ValidateDomainName(domainName)
+	err := common.ValidateDomainName(ptrDName)
 	if err != nil {
 		return err
 	}
 
-	log.WithFields(logrus.Fields{"domainName": domainName, "ttl": ttl, "addr": addr}).Debug("Setting PTR record.")
+	log.WithFields(logrus.Fields{"ptrDName": ptrDName, "ttl": ttl, "addr": addr}).Debug("Setting PTR record.")
 
 	c, err := p.getIBConnector()
 	if err != nil {
@@ -138,16 +137,8 @@ func (p *DNSProvider) SetRecordPTR(domainName string, ttl uint32, addr net.IP) e
 	// if err != nil {
 	// 	return err
 	// }
-	newPTR := ibclient.NewRecordPTR(p.C.DNSView, util.GetDomainNoFQDNDot(domainName), true, ttl, "Created by dns3l", make(ibclient.EA))
-	/*
-			newPTR.Ipv4Addr
-			 		addr.To4().String()
-			newPTR.Name
-					The name of the DNS PTR record in FQDN format to add or remove from the system.
-		            The field is required only for an PTR object in Forward Mapping Zone.
-			newPTR.PrtName   <---------
-					The name of the DNS PTR record in FQDN format
-	*/
+	newPTR := ibclient.NewRecordPTR(p.C.DNSView, util.GetDomainNoFQDNDot(ptrDName), true, ttl, "Created by dns3l", make(ibclient.EA))
+	newPTR.Ipv4Addr = addr.To4().String()
 	_, err = c.CreateObject(newPTR)
 	if err != nil {
 		return err
@@ -157,6 +148,16 @@ func (p *DNSProvider) SetRecordPTR(domainName string, ttl uint32, addr net.IP) e
 
 }
 
+/*
+create
+
+	{"fqdn": "info.com"}
+
+create reversmapping
+
+	{"fqdn": "10.10.10.in-addr.arpa ",
+	"zone_format":"IPV4"}
+*/
 func (p *DNSProvider) SetZoneAuth(domainName string) error {
 
 	err := common.ValidateDomainName(domainName)
@@ -269,7 +270,7 @@ func (p *DNSProvider) DeleteRecordA(domainName string) error {
 
 }
 
-func (p *DNSProvider) DeleteRecordCName(domainName string ) error {
+func (p *DNSProvider) DeleteRecordCName(domainName string) error {
 
 	err := common.ValidateDomainName(domainName)
 	if err != nil {
@@ -346,7 +347,44 @@ func (p *DNSProvider) DeleteRecordPTR(domainName string) error {
 	_, err = c.DeleteObject(res[0].Ref)
 
 	return err
+}
 
+	func (p *DNSProvider) DeleteZoneAuth(domainName string) error {
+		err := common.ValidateDomainName(domainName)
+		if err != nil {
+			return err
+		}
+	
+		log.WithFields(logrus.Fields{"domainName": domainName}).Debug("Deleting PTR record.")
+	
+		c, err := p.getIBConnector()
+		if err != nil {
+			return err
+		}
+		defer util.LogDefer(log, c.Logout())
+	
+		sf := map[string]string{
+			"view": p.C.DNSView,
+			"name": util.GetDomainNoFQDNDot((domainName)),
+		}
+	
+		recordPTR := ibclient.NewEmptyRecordPTR()
+		var res []ibclient.RecordPTR
+	
+		queryParams := ibclient.NewQueryParams(false, sf)
+		err = c.GetObject(recordPTR, "", queryParams, &res)
+	
+		if err != nil {
+			return err
+		} else if len(res) <= 0 {
+			log.WithField("domainName", domainName).Warn("No PTR record could be found, ignoring deletion request.")
+		} else if len(res) > 1 {
+			log.WithField("domainName", domainName).Warnf("Query resulted in more than one PTR record (%d records), not deleting anything for safety.", len(res))
+		}
+	
+		_, err = c.DeleteObject(res[0].Ref)
+	
+		return err
 }
 
 // Will probably be used in the future

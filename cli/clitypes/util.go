@@ -98,7 +98,7 @@ func getProviderData(dnsbackend string, verbose bool) (string, string) {
 	}
 	if verbose {
 		fmt.Fprintf(os.Stderr, "INFO provider user '%s'\n", user)
-		fmt.Fprintf(os.Stderr, "INFO provider pass '%s'\n", secret[0:2])
+		fmt.Fprintf(os.Stderr, "INFO provider pass '%s.2s'\n", secret)
 	}
 	return user, secret
 }
@@ -150,7 +150,7 @@ func setProvider(dnsbackend string, id string, secret string, verbose bool) (typ
 			infblxConfig.Auth.Pass = vip.GetString(providerPath + "auth.pass")
 			if verbose {
 				fmt.Fprintf(os.Stderr, "INFO  setProvider() providers section '%s' selected \n", dnsbackend)
-				fmt.Fprintf(os.Stderr, "INFO  setProvider() secret:= '%2s' ", infblxConfig.Auth.Pass)
+				fmt.Fprintf(os.Stderr, "INFO  setProvider() secret:= '%.2s'\n", infblxConfig.Auth.Pass)
 			}
 		}
 		infblxConfig.DNSView = vip.GetString(providerPath + "dnsview")
@@ -243,7 +243,7 @@ func PrintDNSProvider(provider types.DNSProvider) {
 		fmt.Fprintf(os.Stderr, "Infblk Provider Config Port     	'%s' \n", value.C.Port)
 		fmt.Fprintf(os.Stderr, "Infblk Provider Config Version    	'%s' \n", value.C.Version)
 		fmt.Fprintf(os.Stderr, "Infblk Provider Config Auth User 	'%s' \n", value.C.Auth.User)
-		fmt.Fprintf(os.Stderr, "Infblk Provider Config Auth Pass 	'%s' \n", value.C.Auth.Pass[0:2])
+		fmt.Fprintf(os.Stderr, "Infblk Provider Config Auth Pass 	'%.2s' \n", value.C.Auth.Pass)
 		fmt.Fprintf(os.Stderr, "Infblk Provider Config DNSView   	'%s' \n", value.C.DNSView)
 		fmt.Fprintf(os.Stderr, "Infblk Provider Config SSLVerify 	'%s' \n", value.C.SSLVerify)
 	case *(otc.DNSProvider):
